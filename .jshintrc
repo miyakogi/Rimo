@@ -1,0 +1,13 @@
+{
+  // Enhancement
+  "unused": true,
+  "undef": true,
+
+  // Environments
+  "browser": true,
+  "devel": true,
+
+  // Relaxes
+  "asi": true,
+  "sub": false
+}
