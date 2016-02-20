@@ -1,4 +1,4 @@
-# Rimo - Remote interface to manipulate objects on browser -
+# Rimo.js - Remote interface to manipulate objects on browser -
 
 ## WORK IN PROGRESS
 
