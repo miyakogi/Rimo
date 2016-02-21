@@ -1,3 +1,4 @@
 .ark
 .arkcache
 docs/out
+__pycache__
