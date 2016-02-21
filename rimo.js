@@ -81,7 +81,7 @@
 
   function initialize() {
     // Define default variables
-    var __ws_url = 'ws://' + location.host + '/wdom_ws'
+    var __ws_url = 'ws://' + location.host + '/rimo_ws'
     set_default('DEBUG', false)
     set_default('AUTORELOAD', false)
     set_default('RELOAD_WAIT', 500)
