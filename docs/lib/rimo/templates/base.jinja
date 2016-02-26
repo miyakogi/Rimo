@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}{% endblock %}</title>
+
+  <link rel="stylesheet" href="@root/css/bootstrap.css">
+  <link rel="stylesheet" href="@root/css/theme.css">
+  <link rel="stylesheet" href="@root/css/pygments.css">
+
+  <!-- Web Fonts -->
+  <link href='https://fonts.googleapis.com/css?family=Great+Vibes' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Merriweather' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Gentium+Basic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Vollkorn' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Lora' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Bree+Serif' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Crimson+Text:400,600,700' rel='stylesheet' type='text/css'>
+
+  <!-- JavaScript -->
+  <script src="//code.jquery.com/jquery-1.12.0.min.js"></script>
+  {# <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script> #}
+  <script src="@root/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <nav class="navbar" style="background-color: #fbfcfb;">
+    <div class="container">
+      <a class="navbar-brand">Rimo.js</a>
+      <ul class="nav navbar-nav">
+        <li class="nav-item"><a href="@root/" class="nav-link">Home</a></li>
+        <li class="nav-item"><a href="@root/api/index//" class="nav-link">Document</a></li>
+        {# <div class="btn-group"> #}
+        {#   <button type="button" class="btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Document <span class="caret"></span></button> #}
+        {#   <div class="dropdown-menu"> #}
+        {#     <a class="dropdown-item" href="@root/api/index//">API Reference</a> #}
+        {#     <div class="dropdown-divider"></div> #}
+        {#     <a class="dropdown-item" href="@root/api/dom//">DOM API</a> #}
+        {#     <a class="dropdown-item" href="@root/api/event//">Event API</a> #}
+        {#     <a class="dropdown-item" href="@root/api/options//">Options</a> #}
+        {#   </div> #}
+        {# </div> #}
+      </ul>
+    </div>
+  </nav>
+  <div class="wrapper">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-3 col-xl-3">
+          <h1 class="site-title">
+            <a href="@root/">
+              {{ site.title }}
+            </a>
+          </h1>
+          <p class="site-description">{{ site.description }}</p>
+          {% if inc.menu %}
+            <nav id="menu" class="menu">
+              {{ inc.menu }}
+            </nav>
+          {% endif %}
+        </div>
+        <div class="col-lg-9 col-xl-9">
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

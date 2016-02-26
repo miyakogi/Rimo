@@ -2,9 +2,9 @@
 title: Event API Reference
 ---
 
-# Message Format
+## Message Format
 
-When events are emitted, rimo sends a message by JSON format.
+When events are emitted, rimo sends a message formatted by JSON.
 
 The JSON format includes the following fields.
 
@@ -16,10 +16,10 @@ The JSON format includes the following fields.
 
 ### Data format
 
-Data send with events are object.
+Data sent by events are object.
 The format is varies on which event is emitted.
 
-For example, `onclick` event send empty `{}` or `undefined`.
+For example, `onclick` event send an empty object (`{}`) or `undefined` value.
 `onchange` and `oninput` event send `checked` and `value` property of the node.
 
 ## Examples
@@ -62,7 +62,7 @@ When any string (for example "abc") is input to this input element, rimo will se
 
 Then press "d", and whole input field becomes "abcd", rimo will send the below message:
 
-```
+```js
 {
     "type": "event",
     "id": "my-input",

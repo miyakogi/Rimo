@@ -1,0 +1,63 @@
+.wrapper {
+  margin-top: 2rem;
+}
+
+.table {
+  font-family: Menlo;
+}
+
+.navbar {
+  border-bottom: solid 1px #fcf6f6;
+}
+
+.navbar-brand {
+  font-family: "Great Vibes";
+}
+
+.nav-link {
+  font-family: Merriweather, Vollkorn, "Bree Serif";
+}
+
+.site-title {
+  font-family: "Great Vibes";
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.site-description {
+  font-family: Vollkorn, Lora, Georgia;
+  font-size: 1rem;
+  color: #999999;
+}
+
+.menu a {
+  font-family: Vollkorn, Lora, Georgia;
+  font-size: 1.1rem;
+  display: block;
+  margin-right: 3rem;
+  border-bottom: 1px solid rgba(182, 182, 182, 0.2);
+  text-decoration: none;
+}
+
+.menu ul {
+  padding-left: 1.5rem;
+}
+
+.menu li {
+  list-style-type: none;
+}
+
+pre {
+  margin: 1rem;
+  padding: 0.5rem;
+  background-color: #fafafa;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Crimson Text', 'Bree Serif', Lora, Vollkorn;
+  font-weight: 600;
+}
+
+body {
+  font-family: Georgia, Lora, Vollkorn, "Gentium Basic";
+}

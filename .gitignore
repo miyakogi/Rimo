@@ -2,3 +2,4 @@
 .arkcache
 docs/out
 __pycache__
+.sass-cache

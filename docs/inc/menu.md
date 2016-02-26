@@ -3,6 +3,7 @@
 ---
 
 * [Home](@root/)
-* [About](@root/about//)
-* [APIs](@root/api/index//)
-* [Posts](@root/posts/index//)
+* [API Reference](@root/api/index//)
+    * [DOM](@root/api/dom//)
+    * [Event](@root/api/event//)
+    * [Options](@root/api/options//)
