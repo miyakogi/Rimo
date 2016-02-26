@@ -12,7 +12,7 @@ The JSON format includes the following fields.
 |-------|-------|------|
 | type  | "event" | string |
 | id | ID of the node which emitted the event | string |
-| data | Data to be send by the event | object or undefined |
+| data | Data to be send by the event (see below) | object or undefined |
 
 ### Data format
 
