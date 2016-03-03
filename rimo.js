@@ -162,8 +162,9 @@
   }
 
   rimo.addEventListener = function(node, params) {
-    var e = 'on' + params.event
-    node.addEventListener(e, function() { rimo[e](node) })
+    node.addEventListener(params.event, function() {
+      rimo['on' + params.event](node)
+    })
   }
 
   /* DOM contrall */
