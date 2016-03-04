@@ -135,10 +135,9 @@
 
     // Make root WebScoket connection
     rimo.ws = new WebSocket(rimo.settings.WS_URL)
-    rimo.ws.onopen = ws_onopen
-    rimo.ws.onmessage = ws_onmessage
-    rimo.ws.onclose = ws_onclose
-
+    rimo.ws.addEventListener('open', ws_onopen)
+    rimo.ws.addEventListener('message', ws_onmessage)
+    rimo.ws.addEventListener('close', ws_onclose)
   }
 
   rimo.exec = function(node, method, params) {
