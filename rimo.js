@@ -17,6 +17,11 @@
     NOTSET: 0,
   }
 
+  var event_data_map = {
+    'input': ['value'],
+    'change': ['checked', 'value']
+  }
+
   function get_log_level(level) {
     if (typeof level === 'number'){
       return level
@@ -47,30 +52,31 @@
   }
 
   function node_mounted(node) {
-      if (node.id) {
-        rimo.send_event(node, 'mount')
-      }
+    if (node.id) {
+      rimo.send_event({type: 'mount', target: node})
+    }
   }
 
   function node_unmounted(node) {
-      if (node.id) {
-        rimo.send_event(node, 'unmount')
-      }
+    if (node.id) {
+      rimo.send_event({type: 'unmount', target: node})
+    }
   }
 
   function mutation_handler(m) {
-    for (var i=0; i < m.addedNodes.length; i++) {
+    var i
+    for (i=0; i < m.addedNodes.length; i++) {
       node_mounted(m.addedNodes[i])
     }
-    for (var i=0; i < m.removedNodes.length; i++) {
-      node_mounted(m.removedNodes[i])
+    for (i=0; i < m.removedNodes.length; i++) {
+      node_unmounted(m.removedNodes[i])
     }
   }
 
   function start_observer() {
     // initialize observer
     var observer = new MutationObserver(
-      function(mutations, obs) {
+      function(mutations) {
         mutations.forEach(mutation_handler)
       }
     )
@@ -81,11 +87,12 @@
     observer.observe(document, obs_conf)
   }
 
-  function ws_onopen(e) {
+  function ws_onopen() {
     // Send pending events
     rimo.pending_msgs.forEach(function(msg) {
       rimo.send(msg)
     })
+    rimo.pending_msgs = []
   }
 
   function ws_onmessage(e) {
@@ -171,7 +178,6 @@
 
   // send response
   rimo.send_response = function(node, reqid, data) {
-    rimo.log.debug('send_response')
     var msg = JSON.stringify({
       type: 'response',
       id: node.id,
@@ -185,48 +191,25 @@
   /* Event contrall */
   // emit events to python
   // find better name...
-  rimo.send_event = function(node, event, data) {
+  rimo.send_event = function(e) {
+    var data = {}
+    if (e.type in event_data_map) {
+      event_data_map[e.type].forEach(function(prop) {
+        data[prop] = e.target[prop]
+      })
+    }
     var msg = JSON.stringify({
       type: 'event',
-      id: node.id,
-      event: event,
+      event: e.type,
+      id: e.target.id,
       data: data
     })
     rimo.log.debug(msg)
     rimo.send(msg)
   }
 
-  /* Event handlers */
-  rimo.onclick = function(node) {
-    rimo.send_event(node, 'click')
-  }
-
-  rimo.onchange = function(node) {
-    rimo.send_event(
-      node,
-      'change',
-      {
-        checked: node.checked,
-        value: node.value,
-      }
-    )
-  }
-
-  rimo.oninput = function(node) {
-    rimo.send_event(
-      node,
-      'input',
-      {
-        checked: node.checked,
-        value: node.value,
-      }
-    )
-  }
-
   rimo.addEventListener = function(node, params) {
-    node.addEventListener(params.event, function() {
-      rimo['on' + params.event](node)
-    })
+    node.addEventListener(params.event, rimo.send_event)
   }
 
   /* DOM contrall */
