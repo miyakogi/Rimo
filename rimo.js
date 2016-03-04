@@ -46,6 +46,29 @@
     return document.getElementById(id)
   }
 
+  function node_mounted(node) {
+      if (node.id) {
+        // console.log(node.nodeName)
+        // console.log(node.id)
+      }
+  }
+
+  function node_unmounted(node) {
+      if (node.id) {
+        // console.log(node.nodeName)
+        // console.log(node.id)
+      }
+  }
+
+  function mutation_handler(m) {
+    for (var i=0; i < m.addedNodes.length; i++) {
+      node_mounted(m.addedNodes[i])
+    }
+    for (var i=0; i < m.removedNodes.length; i++) {
+      node_mounted(m.removedNodes[i])
+    }
+  }
+
   function ws_onmessage(e) {
     var msg = JSON.parse(e.data)
     var elm = get_node(msg.id)
@@ -95,6 +118,18 @@
     rimo.ws = new WebSocket(rimo.settings.WS_URL)
     rimo.ws.onmessage = ws_onmessage
     rimo.ws.onclose = ws_onclose
+
+    // initialize observer
+    var observer = new MutationObserver(
+      function(mutations, obs) {
+        mutations.forEach(mutation_handler)
+      }
+    )
+    var obs_conf = {
+      'subtree': true,
+      'childList': true
+    }
+    observer.observe(document, obs_conf)
   }
 
   rimo.exec = function(node, method, params) {
