@@ -48,15 +48,13 @@
 
   function node_mounted(node) {
       if (node.id) {
-        // console.log(node.nodeName)
-        // console.log(node.id)
+        rimo.send_event(node, 'mount')
       }
   }
 
   function node_unmounted(node) {
       if (node.id) {
-        // console.log(node.nodeName)
-        // console.log(node.id)
+        rimo.send_event(node, 'unmount')
       }
   }
 
@@ -67,6 +65,27 @@
     for (var i=0; i < m.removedNodes.length; i++) {
       node_mounted(m.removedNodes[i])
     }
+  }
+
+  function start_observer() {
+    // initialize observer
+    var observer = new MutationObserver(
+      function(mutations, obs) {
+        mutations.forEach(mutation_handler)
+      }
+    )
+    var obs_conf = {
+      'subtree': true,
+      'childList': true
+    }
+    observer.observe(document, obs_conf)
+  }
+
+  function ws_onopen(e) {
+    // Send pending events
+    rimo.pending_msgs.forEach(function(msg) {
+      rimo.send(msg)
+    })
   }
 
   function ws_onmessage(e) {
@@ -116,20 +135,10 @@
 
     // Make root WebScoket connection
     rimo.ws = new WebSocket(rimo.settings.WS_URL)
+    rimo.ws.onopen = ws_onopen
     rimo.ws.onmessage = ws_onmessage
     rimo.ws.onclose = ws_onclose
 
-    // initialize observer
-    var observer = new MutationObserver(
-      function(mutations, obs) {
-        mutations.forEach(mutation_handler)
-      }
-    )
-    var obs_conf = {
-      'subtree': true,
-      'childList': true
-    }
-    observer.observe(document, obs_conf)
   }
 
   rimo.exec = function(node, method, params) {
@@ -142,6 +151,25 @@
     eval(params.script)
   }
 
+  rimo.pending_msgs = []
+
+  rimo.send = function(msg, retry) {
+    if ('ws' in rimo) {
+      if (!rimo.ws.OPEN) { 
+        retry = retry ? retry + 1 : 1
+        if (retry < 5) {
+          setTimeout(function() { rimo.send(msg, retry) }, 200)
+        } else {
+          setTimeout(function() { rimo.send(msg) }, 200)
+        }
+      } else {
+        rimo.ws.send(msg)
+      }
+    } else {
+      rimo.pending_msgs.push(msg)
+    }
+  }
+
   // send response
   rimo.send_response = function(node, reqid, data) {
     rimo.log.debug('send_response')
@@ -152,7 +180,7 @@
       data: data
     })
     rimo.log.debug(msg)
-    rimo.ws.send(msg)
+    rimo.send(msg)
   }
 
   /* Event contrall */
@@ -166,7 +194,7 @@
       data: data
     })
     rimo.log.debug(msg)
-    rimo.ws.send(msg)
+    rimo.send(msg)
   }
 
   /* Event handlers */
@@ -324,7 +352,7 @@
     rimo.send_response(node, params.reqid, {y: window.scrollY})
   }
 
-  rimo.log.log = function(level, message, retry) {
+  rimo.log.log = function(level, message) {
     var msg = JSON.stringify({
       type: 'log',
       level: level,
@@ -335,16 +363,7 @@
       rimo.log.console(level, message)
     }
 
-    if (!rimo.ws.OPEN) { 
-      retry = retry ? retry + 1 : 1
-      if (retry < 5) {
-        setTimeout(function() { rimo.log.log(level, message, retry) }, 200)
-      } else {
-        setTimeout(function() { rimo.ws.send(msg) }, 200)
-      }
-    } else {
-      rimo.ws.send(msg)
-    }
+    rimo.send(msg)
   }
 
   rimo.log.console = function(level, message) {
@@ -376,5 +395,5 @@
   // Register object to global
   window['rimo'] = rimo
   window.addEventListener('load', initialize)
-
+  start_observer()
 })(typeof window != 'undefined' ? window : void 0);
