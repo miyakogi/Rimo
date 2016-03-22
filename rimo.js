@@ -53,13 +53,13 @@
 
   function node_mounted(node) {
     if (node.id) {
-      rimo.send_event({type: 'mount', target: node})
+      rimo.send_event({type: 'mount', target: node, currentTarget: node})
     }
   }
 
   function node_unmounted(node) {
     if (node.id) {
-      rimo.send_event({type: 'unmount', target: node})
+      rimo.send_event({type: 'unmount', target: node, currentTarget: node})
     }
   }
 
@@ -82,7 +82,7 @@
     )
     var obs_conf = {
       'subtree': true,
-      'childList': true
+      'childList': true,
     }
     observer.observe(document, obs_conf)
   }
@@ -192,17 +192,23 @@
   // emit events to python
   // find better name...
   rimo.send_event = function(e) {
-    var data = {}
+    var event = {
+      'type': e.type,
+      'currentTarget': {'id': e.currentTarget.id},
+      'target': {'id': e.target.id}
+    }
+
     if (e.type in event_data_map) {
       event_data_map[e.type].forEach(function(prop) {
-        data[prop] = e.target[prop]
+        event.target[prop] = e.target[prop]
+        event.currentTarget[prop] = e.currentTarget[prop]
       })
     }
+
     var msg = JSON.stringify({
       type: 'event',
-      event: e.type,
-      id: e.target.id,
-      data: data
+      event: event,
+      id: e.currentTarget.id
     })
     rimo.log.debug(msg)
     rimo.send(msg)
@@ -210,6 +216,10 @@
 
   rimo.addEventListener = function(node, params) {
     node.addEventListener(params.event, rimo.send_event)
+  }
+
+  rimo.removeEventListener = function(node, params) {
+    node.removeEventListener(params.event, rimo.send_event)
   }
 
   /* DOM contrall */
@@ -375,7 +385,7 @@
   }
 
   // Register object to global
-  window['rimo'] = rimo
+  window.rimo = rimo
   window.addEventListener('load', initialize)
   start_observer()
 })(typeof window != 'undefined' ? window : void 0);
