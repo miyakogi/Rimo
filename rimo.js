@@ -240,7 +240,7 @@
   }
 
   rimo.insertAdjacentHTML = function(node, params) {
-    node.insertAdjacentHTML(params.position, params.text)
+    node.insertAdjacentHTML(params.position, params.html)
   }
 
   rimo.textContent = function(node, params) {
