@@ -291,19 +291,15 @@
   }
 
   rimo.addClass = function(node, params) {
-    if (node.classList) {
-      node.classList.add(params.class)
-    } else {
-      node.className += ' ' + params.class
-    }
+    // I won't support IE and Safari...
+    // node.classList.add(...params.classes)
+    node.classList.add.apply(node.classList, params.classes)
   }
 
   rimo.removeClass = function(node, params) {
-    if (node.classList) {
-      node.classList.remove(params.class)
-    } else {
-      node.className = node.className.replace(params.class, '')
-    }
+    // I won't support IE and Safari...
+    // node.classList.remove(...params.classes)
+    node.classList.remove.apply(node.classList, params.classes)
   }
 
   rimo.empty = function(node) {
