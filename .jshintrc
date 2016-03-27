@@ -6,6 +6,7 @@
   // Environments
   "browser": true,
   "devel": true,
+  "evil": true,
 
   // Relaxes
   "asi": true,

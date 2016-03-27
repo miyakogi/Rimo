@@ -230,9 +230,10 @@
     } else {
       var ref_node = node.childNodes[index]
       if (ref_node.nodeName === '#text') {
-        var df = document.createDocumentFragment()
-        df.innerHTML = params.html
-        ref_node.parentNode.insertBefore(df, ref_node)
+        // There may be better way...
+        var _ = document.createElement('template')
+        _.innerHTML = params.html
+        ref_node.parentNode.insertBefore(_.content, ref_node)
       } else {
         ref_node.insertAdjacentHTML('beforebegin', params.html)
       }
