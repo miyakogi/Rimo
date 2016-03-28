@@ -241,10 +241,11 @@
       node.insertAdjacentHTML('beforeend', params.html)
     } else {
       var ref_node = node.childNodes[index]
-      if (ref_node.nodeName === '#text') {
+      if (ref_node.nodeType !== 1) {
         // There may be better way...
         var _ = document.createElement('template')
         _.innerHTML = params.html
+        // no need to clone contents, since this template is used once
         ref_node.parentNode.insertBefore(_.content, ref_node)
       } else {
         ref_node.insertAdjacentHTML('beforebegin', params.html)
@@ -269,8 +270,13 @@
   }
 
   rimo.removeChild = function(node, params) {
-    var child = document.getElementById(params.id)
-    if (child){
+    var child
+    if ('id' in params) {
+      child = document.getElementById(params.id)
+    } else if ('index' in params) {
+      child = node.childNodes.item(params.index)
+    }
+    if (child) {
       node.removeChild(child)
     }
   }
