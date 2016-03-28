@@ -96,23 +96,26 @@
   }
 
   function ws_onmessage(e) {
-    var msg = JSON.parse(e.data)
-    var elm = get_node(msg.id)
-    if (!elm) {
-      // node may not have been mounted yet. retry 100ms later.
-      setTimeout(function() {
-        var elm = get_node(msg.id)
-        if (!elm) {
-          // node not found. send warning.
-          rimo.log.console('warn', 'gat message to unknown node.\n Message: ' + msg)
-          rimo.log.warn('unknown node: id=' + msg.id + ', tag=' + msg.tag + ', method=' + msg.method)
-        } else {
-          rimo.exec(elm, msg.method, msg.params)
-        }
-      }, 100)
-    } else {
-      rimo.exec(elm, msg.method, msg.params)
-    }
+    var data = e.data
+    setTimeout(function() {
+      var msg = JSON.parse(data)
+      var elm = get_node(msg.id)
+      if (!elm) {
+        // node may not have been mounted yet. retry 100ms later.
+        setTimeout(function() {
+          var elm = get_node(msg.id)
+          if (!elm) {
+            // node not found. send warning.
+            rimo.log.console('warn', 'gat message to unknown node.\n Message: ' + msg)
+            rimo.log.warn('unknown node: id=' + msg.id + ', tag=' + msg.tag + ', method=' + msg.method)
+          } else {
+            rimo.exec(elm, msg.method, msg.params)
+          }
+        }, 100)
+      } else {
+        rimo.exec(elm, msg.method, msg.params)
+      }
+    }, 0)
   }
 
   function ws_onclose() {
@@ -149,7 +152,9 @@
 
   rimo.exec = function(node, method, params) {
     // Execute fucntion with msg
-    rimo[method](node, params)
+    setTimeout(function() {
+      rimo[method](node, params)
+    }, 0)
   }
 
   rimo.eval = function(node, params) {
@@ -161,15 +166,15 @@
 
   rimo.send = function(msg, retry) {
     if ('ws' in rimo) {
-      if (!rimo.ws.OPEN) { 
+      if (rimo.ws.readyState ===  1) { 
+        rimo.ws.send(msg)
+      } else {
         retry = retry ? retry + 1 : 1
         if (retry < 5) {
           setTimeout(function() { rimo.send(msg, retry) }, 200)
         } else {
           setTimeout(function() { rimo.send(msg) }, 200)
         }
-      } else {
-        rimo.ws.send(msg)
       }
     } else {
       rimo.pending_msgs.push(msg)
@@ -178,40 +183,47 @@
 
   // send response
   rimo.send_response = function(node, reqid, data) {
-    var msg = JSON.stringify({
-      type: 'response',
-      id: node.id,
-      reqid: reqid,
-      data: data
-    })
-    rimo.log.debug(msg)
-    rimo.send(msg)
+    setTimeout(function() {
+      var msg = JSON.stringify({
+        type: 'response',
+        id: node.id,
+        reqid: reqid,
+        data: data
+      })
+      rimo.log.debug(msg)
+      rimo.send(msg)
+    }, 0)
   }
 
   /* Event contrall */
   // emit events to python
   // find better name...
   rimo.send_event = function(e) {
-    var event = {
-      'type': e.type,
-      'currentTarget': {'id': e.currentTarget.id},
-      'target': {'id': e.target.id}
-    }
+    // Catch currentTarget here. In callback, it becomes different node or null,
+    // since event bubbles up.
+    var currentTarget = e.currentTarget
+    setTimeout(function() {
+      var event = {
+        'type': e.type,
+        'currentTarget': {'id': currentTarget.id},
+        'target': {'id': e.target.id}
+      }
 
-    if (e.type in event_data_map) {
-      event_data_map[e.type].forEach(function(prop) {
-        event.target[prop] = e.target[prop]
-        event.currentTarget[prop] = e.currentTarget[prop]
+      if (e.type in event_data_map) {
+        event_data_map[e.type].forEach(function(prop) {
+          event.target[prop] = e.target[prop]
+          event.currentTarget[prop] = currentTarget[prop]
+        })
+      }
+
+      var msg = JSON.stringify({
+        type: 'event',
+        event: event,
+        id: currentTarget.id
       })
-    }
-
-    var msg = JSON.stringify({
-      type: 'event',
-      event: event,
-      id: e.currentTarget.id
-    })
-    rimo.log.debug(msg)
-    rimo.send(msg)
+      rimo.log.debug(msg)
+      rimo.send(msg)
+    }, 0)
   }
 
   rimo.addEventListener = function(node, params) {
@@ -342,17 +354,19 @@
   }
 
   rimo.log.log = function(level, message) {
-    var msg = JSON.stringify({
-      type: 'log',
-      level: level,
-      message: message
-    })
+    setTimeout(function() {
+      var msg = JSON.stringify({
+        type: 'log',
+        level: level,
+        message: message
+      })
 
-    if (rimo.settings.LOG_CONSOLE) {
-      rimo.log.console(level, message)
-    }
+      if (rimo.settings.LOG_CONSOLE) {
+        rimo.log.console(level, message)
+      }
 
-    rimo.send(msg)
+      rimo.send(msg)
+    }, 0)
   }
 
   rimo.log.console = function(level, message) {
