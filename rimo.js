@@ -119,7 +119,7 @@
   }
 
   function ws_onclose() {
-    function reload(){
+    function reload() {
       location.reload()
     }
 
@@ -159,7 +159,9 @@
 
   rimo.eval = function(node, params) {
     // Execute fucntion with msg
-    eval(params.script)
+    setTimeout(function() {
+      eval(params.script)
+    }, 0)
   }
 
   rimo.pending_msgs = []
@@ -402,7 +404,6 @@
   }
 
   // Register object to global
-  window.rimo = rimo
   window.addEventListener('load', initialize)
   start_observer()
 })(typeof window != 'undefined' ? window : void 0);
