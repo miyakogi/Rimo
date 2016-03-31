@@ -340,6 +340,11 @@
     })
   }
 
+  /* Event Control */
+  rimo.click = function(node) {
+    node.click()
+  }
+
   /* Window Control */
   rimo.scroll = function(node, params){
     window.scrollTo(params.x, params.y)
