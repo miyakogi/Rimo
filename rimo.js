@@ -54,6 +54,10 @@
   function node_mounted(node) {
     if (node.id) {
       rimo.send_event({type: 'mount', target: node, currentTarget: node})
+      if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+        node.addEventListener('input', rimo.send_event)
+        node.addEventListener('change', rimo.send_event)
+      }
     }
   }
 
