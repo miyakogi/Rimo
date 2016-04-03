@@ -300,7 +300,7 @@
   rimo.replaceChildByIndex = function(node, html, index) {
     var old_child = node.childNodes.item(index)
     if (old_child) {
-      old_child.insertAdjacentHTML('beforebegin', html)
+      rimo.insert(node, index, html)
       old_child.parentNode.removeChild(old_child)
     }
   }
