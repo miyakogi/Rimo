@@ -103,21 +103,24 @@
     var data = e.data
     setTimeout(function() {
       var msg = JSON.parse(data)
-      var elm = get_node(msg.id)
-      if (!elm) {
-        // node may not have been mounted yet. retry 100ms later.
-        setTimeout(function() {
-          var elm = get_node(msg.id)
-          if (!elm) {
-            // node not found. send warning.
-            rimo.log.console('warn', 'gat message to unknown node.\n Message: ' + msg)
-            rimo.log.warn('unknown node: id=' + msg.id + ', tag=' + msg.tag + ', method=' + msg.method)
-          } else {
-            rimo.exec(elm, msg.method, msg.params)
-          }
-        }, 100)
-      } else {
-        rimo.exec(elm, msg.method, msg.params)
+      var target = msg.target
+      if (target === 'node') {
+        var node = get_node(msg.id)
+        if (!node) {
+          // node may not have been mounted yet. retry 100ms later.
+          setTimeout(function() {
+            var node = get_node(msg.id)
+            if (!node) {
+              // node not found. send warning.
+              rimo.log.console('warn', 'gat message to unknown node.\n Message: ' + msg)
+              rimo.log.warn('unknown node: id=' + msg.id + ', tag=' + msg.tag + ', method=' + msg.method)
+            } else {
+              rimo.exec(node, msg.method, msg.params)
+            }
+          }, 100)
+        } else {
+          rimo.exec(node, msg.method, msg.params)
+        }
       }
     }, 0)
   }
@@ -157,14 +160,15 @@
   rimo.exec = function(node, method, params) {
     // Execute fucntion with msg
     setTimeout(function() {
-      rimo[method](node, params)
+      var args = [node].concat(params)
+      rimo[method].apply(rimo, args)
     }, 0)
   }
 
-  rimo.eval = function(node, params) {
+  rimo.eval = function(node, script) {
     // Execute fucntion with msg
     setTimeout(function() {
-      eval(params.script)
+      eval(script)
     }, 0)
   }
 
@@ -232,107 +236,105 @@
     }, 0)
   }
 
-  rimo.addEventListener = function(node, params) {
-    node.addEventListener(params.event, rimo.send_event)
+  rimo.addEventListener = function(node, event) {
+    node.addEventListener(event, rimo.send_event)
   }
 
-  rimo.removeEventListener = function(node, params) {
-    node.removeEventListener(params.event, rimo.send_event)
+  rimo.removeEventListener = function(node, event) {
+    node.removeEventListener(event, rimo.send_event)
   }
 
   /* DOM contrall */
-  rimo.insert = function(node, params) {
-    var index = Number(params.index)
+  rimo.insert = function(node, ind, html) {
+    var index = Number(ind)
     if (!node.hasChildNodes() || index >= node.childNodes.length) {
-      node.insertAdjacentHTML('beforeend', params.html)
+      node.insertAdjacentHTML('beforeend', html)
     } else {
       var ref_node = node.childNodes[index]
       if (ref_node.nodeType !== 1) {
         // There may be better way...
         var _ = document.createElement('template')
-        _.innerHTML = params.html
+        _.innerHTML = html
         // no need to clone contents, since this template is used once
         ref_node.parentNode.insertBefore(_.content, ref_node)
       } else {
-        ref_node.insertAdjacentHTML('beforebegin', params.html)
+        ref_node.insertAdjacentHTML('beforebegin', html)
       }
     }
   }
 
-  rimo.insertAdjacentHTML = function(node, params) {
-    node.insertAdjacentHTML(params.position, params.html)
+  rimo.insertAdjacentHTML = function(node, position, html) {
+    node.insertAdjacentHTML(position, html)
   }
 
-  rimo.textContent = function(node, params) {
-    node.textContent = params.text
+  rimo.textContent = function(node, text) {
+    node.textContent = text
   }
 
-  rimo.innerHTML = function(node, params) {
-    node.innerHTML = params.html
+  rimo.innerHTML = function(node, html) {
+    node.innerHTML = html
   }
 
-  rimo.outerHTML = function(node, params) {
-    node.outerHTML = params.html
+  rimo.outerHTML = function(node, html) {
+    node.outerHTML = html
   }
 
-  rimo.removeChild = function(node, params) {
-    var child
-    if ('id' in params) {
-      child = document.getElementById(params.id)
-    } else if ('index' in params) {
-      child = node.childNodes.item(params.index)
-    }
-    if (child) {
-      node.removeChild(child)
-    }
+  rimo.removeChildById = function(node, id) {
+    var child = document.getElementById(id)
+    if (child) { child.remove() }
   }
 
-  rimo.replaceChild = function(node, params) {
-    var old_child = document.getElementById(params.id)
+  rimo.removeChildByIndex = function(node, index) {
+    var child = node.childNodes.item(index)
+    if (child) { child.remove() }
+  }
+
+  rimo.replaceChildById = function(node, html, id) {
+    var old_child = document.getElementById(id)
     if (old_child) {
-      old_child.insertAdjacentHTML('beforebegin', params.html)
+      old_child.insertAdjacentHTML('beforebegin', html)
       old_child.parentNode.removeChild(old_child)
     }
   }
 
-  rimo.removeAttribute = function(node, params) {
-    node.removeAttribute(params.attr)
+  rimo.replaceChildByIndex = function(node, html, index) {
+    var old_child = node.childNodes.item(index)
+    if (old_child) {
+      old_child.insertAdjacentHTML('beforebegin', html)
+      old_child.parentNode.removeChild(old_child)
+    }
   }
 
-  rimo.setAttribute = function(node, params) {
-    var value = params.value
-    if (typeof value === 'string'){
-      if (value === 'true') {
-        value = true
-      } else if (value === 'false') {
-        value = false
-      }
-    }
-    if (params.attr in node) {
-      node[params.attr] = value
+  rimo.removeAttribute = function(node, attr) {
+    node.removeAttribute(attr)
+  }
+
+  rimo.setAttribute = function(node, attr, value) {
+    if (attr in node) {
+      // some boolean values, like hidden, fail on setAttribute
+      node[attr] = value
     } else {
-      node.setAttribute(params.attr, value)
+      node.setAttribute(attr, value)
     }
   }
 
-  rimo.addClass = function(node, params) {
+  rimo.addClass = function(node, classes) {
     // I won't support IE and Safari...
     // node.classList.add(...params.classes)
-    node.classList.add.apply(node.classList, params.classes)
+    node.classList.add.apply(node.classList, classes)
   }
 
-  rimo.removeClass = function(node, params) {
+  rimo.removeClass = function(node, classes) {
     // I won't support IE and Safari...
     // node.classList.remove(...params.classes)
-    node.classList.remove.apply(node.classList, params.classes)
+    node.classList.remove.apply(node.classList, classes)
   }
 
   rimo.empty = function(node) {
     node.innerHTML = ''
   }
 
-  rimo.getBoundingClientRect = function(node, params) {
-    var reqid = params.reqid
+  rimo.getBoundingClientRect = function(node, reqid) {
     var rect = node.getBoundingClientRect()
     rimo.send_response(node, reqid, {
       bottom: rect.bottom,
@@ -350,24 +352,24 @@
   }
 
   /* Window Control */
-  rimo.scroll = function(node, params){
-    window.scrollTo(params.x, params.y)
+  rimo.scroll = function(node, x, y){
+    window.scrollTo(x, y)
   }
 
-  rimo.scrollTo = function(node, params){
-    window.scrollTo(params.x, params.y)
+  rimo.scrollTo = function(node, x, y){
+    window.scrollTo(x, y)
   }
 
-  rimo.scrollBy = function(node, params){
-    window.scrollBy(params.x, params.y)
+  rimo.scrollBy = function(node, x, y){
+    window.scrollBy(x, y)
   }
 
-  rimo.scrollX = function(node, params){
-    rimo.send_response(node, params.reqid, {x: window.scrollX})
+  rimo.scrollX = function(node, reqid){
+    rimo.send_response(node, reqid, {x: window.scrollX})
   }
 
-  rimo.scrollY = function(node, params){
-    rimo.send_response(node, params.reqid, {y: window.scrollY})
+  rimo.scrollY = function(node, reqid){
+    rimo.send_response(node, reqid, {y: window.scrollY})
   }
 
   rimo.log.log = function(level, message) {
