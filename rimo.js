@@ -281,12 +281,12 @@
 
   rimo.removeChildById = function(node, id) {
     var child = document.getElementById(id)
-    if (child) { child.remove() }
+    if (child) { node.removeChild(child) }
   }
 
   rimo.removeChildByIndex = function(node, index) {
     var child = node.childNodes.item(index)
-    if (child) { child.remove() }
+    if (child) { node.removeChild(child) }
   }
 
   rimo.replaceChildById = function(node, html, id) {
