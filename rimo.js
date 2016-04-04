@@ -48,11 +48,12 @@
   }
 
   function get_node(id) {
-    return document.getElementById(id)
+    // return document.getElementById(id)
+    return document.querySelector('[rimo_id="#id"]'.replace(/#id/, id))
   }
 
   function node_mounted(node) {
-    if (node.id) {
+    if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('rimo_id')) {
       rimo.send_event({type: 'mount', target: node, currentTarget: node})
       if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
         node.addEventListener('input', rimo.send_event)
@@ -62,7 +63,7 @@
   }
 
   function node_unmounted(node) {
-    if (node.id) {
+    if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('rimo_id')) {
       rimo.send_event({type: 'unmount', target: node, currentTarget: node})
     }
   }
@@ -196,7 +197,7 @@
     setTimeout(function() {
       var msg = JSON.stringify({
         type: 'response',
-        id: node.id,
+        id: node.getAttribute('rimo_id'),
         reqid: reqid,
         data: data
       })
@@ -215,8 +216,8 @@
     setTimeout(function() {
       var event = {
         'type': e.type,
-        'currentTarget': {'id': currentTarget.id},
-        'target': {'id': e.target.id}
+        'currentTarget': {'id': currentTarget.getAttribute('rimo_id')},
+        'target': {'id': e.target.getAttribute('rimo_id')}
       }
 
       if (e.type in event_data_map) {
@@ -229,7 +230,7 @@
       var msg = JSON.stringify({
         type: 'event',
         event: event,
-        id: currentTarget.id
+        id: currentTarget.getAttribute('rimo_id')
       })
       rimo.log.debug(msg)
       rimo.send(msg)
@@ -280,7 +281,7 @@
   }
 
   rimo.removeChildById = function(node, id) {
-    var child = document.getElementById(id)
+    var child = get_node(id)
     if (child) { node.removeChild(child) }
   }
 
@@ -290,7 +291,7 @@
   }
 
   rimo.replaceChildById = function(node, html, id) {
-    var old_child = document.getElementById(id)
+    var old_child = get_node(id)
     if (old_child) {
       old_child.insertAdjacentHTML('beforebegin', html)
       old_child.parentNode.removeChild(old_child)
