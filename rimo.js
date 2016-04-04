@@ -53,28 +53,30 @@
   }
 
   function node_mounted(node) {
-    if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('rimo_id')) {
-      rimo.send_event({type: 'mount', target: node, currentTarget: node})
-      if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
-        node.addEventListener('input', rimo.send_event)
-        node.addEventListener('change', rimo.send_event)
-      }
+    rimo.send_event({type: 'mount', target: node, currentTarget: node})
+    if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+      node.addEventListener('input', rimo.send_event)
+      node.addEventListener('change', rimo.send_event)
     }
   }
 
   function node_unmounted(node) {
-    if (node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('rimo_id')) {
-      rimo.send_event({type: 'unmount', target: node, currentTarget: node})
-    }
+    rimo.send_event({type: 'unmount', target: node, currentTarget: node})
   }
 
   function mutation_handler(m) {
-    var i
+    var i, node
     for (i=0; i < m.addedNodes.length; i++) {
-      node_mounted(m.addedNodes[i])
+      node = m.addedNodes[i]
+      if (node && node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('rimo_id')) {
+        node_mounted(node)
+      }
     }
     for (i=0; i < m.removedNodes.length; i++) {
-      node_unmounted(m.removedNodes[i])
+      node = m.addedNodes[i]
+      if (node && node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('rimo_id')) {
+        node_unmounted(node)
+      }
     }
   }
 
@@ -82,7 +84,9 @@
     // initialize observer
     var observer = new MutationObserver(
       function(mutations) {
-        mutations.forEach(mutation_handler)
+        setTimeout(function() {
+          mutations.forEach(mutation_handler)
+        }, 0);
       }
     )
     var obs_conf = {
