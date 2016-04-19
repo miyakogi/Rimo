@@ -17,6 +17,7 @@
     NOTSET: 0,
   }
 
+  var element_with_value = ['INPUT', 'TEXTAREA', 'SELECT']
   var event_data_map = {
     'input': ['value'],
     'change': ['checked', 'value']
@@ -54,7 +55,7 @@
 
   function node_mounted(node) {
     rimo.send_event({type: 'mount', target: node, currentTarget: node})
-    if (node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') {
+    if (element_with_value.indexOf(node.tagName) >= 0) {
       node.addEventListener('input', rimo.send_event)
       node.addEventListener('change', rimo.send_event)
     }
