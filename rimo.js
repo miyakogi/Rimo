@@ -231,6 +231,15 @@
           event.currentTarget[prop] = currentTarget[prop]
         })
       }
+      if (currentTarget.localName === 'select') {
+        var selected = []
+        var len = currentTarget.selectedOptions.length
+        for (var i=0; i < len; i++) {
+          var opt = currentTarget.selectedOptions[i]
+          selected.push(opt.getAttribute('rimo_id'))
+        }
+        event.currentTarget.selectedOptions = selected
+      }
 
       var msg = JSON.stringify({
         type: 'event',
