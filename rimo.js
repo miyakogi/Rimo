@@ -174,7 +174,13 @@
   rimo.eval = function(node, script) {
     // Execute fucntion with msg
     setTimeout(function() {
-      eval(script)
+      try {
+        eval(script)
+      }
+      catch (e) {
+        rimo.log.error(e.toString())
+        rimo.log.console('error', e.toString())
+      }
     }.bind(node), 0)
   }
 
