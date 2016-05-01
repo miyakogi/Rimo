@@ -175,7 +175,7 @@
     // Execute fucntion with msg
     setTimeout(function() {
       eval(script)
-    }, 0)
+    }.bind(node), 0)
   }
 
   rimo.pending_msgs = []
