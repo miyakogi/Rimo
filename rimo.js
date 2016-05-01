@@ -410,7 +410,7 @@
   }
 
   rimo.log.console = function(level, message) {
-    if (rimo.log.level <= get_log_level(level)) {
+    if (rimo.log.level <= get_log_level(level) && 'console' in window) {
       console[level](rimo.settings.LOG_PREFIX + message)
     }
   }
