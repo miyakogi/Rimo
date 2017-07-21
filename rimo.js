@@ -53,7 +53,12 @@
     return document.querySelector('[rimo_id="#id"]'.replace(/#id/, id))
   }
 
+  function is_rimo_node(node) {
+    return node.hasAttribute('rimo_id')
+  }
+
   function node_mounted(node) {
+    if (!is_rimo_node(node)) { return }
     rimo.send_event({type: 'mount', target: node, currentTarget: node})
     if (element_with_value.indexOf(node.tagName) >= 0) {
       node.addEventListener('input', rimo.send_event)
@@ -62,6 +67,7 @@
   }
 
   function node_unmounted(node) {
+    if (!is_rimo_node(node)) { return }
     rimo.send_event({type: 'unmount', target: node, currentTarget: node})
   }
 
@@ -118,7 +124,7 @@
             var node = get_node(msg.id)
             if (!node) {
               // node not found. send warning.
-              rimo.log.console('warn', 'gat message to unknown node.\n Message: ' + msg)
+              rimo.log.console('warn', 'gat message to unknown node (id=' + msg.id + ').\n Message: ' + msg)
               rimo.log.warn('unknown node: id=' + msg.id + ', tag=' + msg.tag + ', method=' + msg.method)
             } else {
               rimo.exec(node, msg.method, msg.params)
@@ -217,13 +223,14 @@
     }, 0)
   }
 
-  /* Event contrall */
+  /* Event control */
   // emit events to python
   // find better name...
   rimo.send_event = function(e) {
     // Catch currentTarget here. In callback, it becomes different node or null,
     // since event bubbles up.
     var currentTarget = e.currentTarget
+    if (!is_rimo_node(currentTarget)) { return }
     setTimeout(function() {
       var event = {
         'type': e.type,
@@ -265,7 +272,7 @@
     node.removeEventListener(event, rimo.send_event)
   }
 
-  /* DOM contrall */
+  /* DOM control */
   rimo.insert = function(node, ind, html) {
     var index = Number(ind)
     if (!node.hasChildNodes() || index >= node.childNodes.length) {
