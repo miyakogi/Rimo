@@ -104,9 +104,11 @@
   }
 
   function ws_onopen() {
+    // Start msg sending loop
+    rimo.msg_loop()
     // Send pending events
     rimo.pending_msgs.forEach(function(msg) {
-      rimo.send(msg)
+      rimo.push_msg(msg)
     })
     rimo.pending_msgs = []
   }
@@ -114,14 +116,19 @@
   function ws_onmessage(e) {
     var data = e.data
     setTimeout(function() {
-      var msg = JSON.parse(data)
-      var target = msg.target
-      if (target === 'node') {
-        var node = get_node(msg.id)
-        if (!node) {
-          // node may not have been mounted yet. retry 100ms later.
-          setTimeout(function() {
-            var node = get_node(msg.id)
+      var msgs = JSON.parse(data)
+      msgs.forEach(msg_to_node)
+    }, 0)
+  }
+
+  function msg_to_node(msg) {
+    var target = msg.target
+    if (target === 'node') {
+      var node = get_node(msg.id)
+      if (!node) {
+        // node may not have been mounted yet. retry 100ms later.
+        setTimeout(function() {
+          var node = get_node(msg.id)
             if (!node) {
               // node not found. send warning.
               rimo.log.console('warn', 'gat message to unknown node (id=' + msg.id + ').\n Message: ' + msg)
@@ -129,12 +136,11 @@
             } else {
               rimo.exec(node, msg.method, msg.params)
             }
-          }, 100)
-        } else {
-          rimo.exec(node, msg.method, msg.params)
-        }
+        }, 100)
+      } else {
+        rimo.exec(node, msg.method, msg.params)
       }
-    }, 0)
+    }
   }
 
   function ws_onclose() {
@@ -156,6 +162,7 @@
     set_default('DEBUG', false)
     set_default('AUTORELOAD', false)
     set_default('RELOAD_WAIT', 500)
+    set_default('MESSAGE_WAIT', 0.005)
     set_default('LOG_LEVEL', 'WARN')
     set_default('LOG_PREFIX', 'rimo: ')
     set_default('LOG_CONSOLE', false)
@@ -191,6 +198,22 @@
   }
 
   rimo.pending_msgs = []
+  rimo.msg_queue = []
+
+  rimo.push_msg = function(msg) {
+    rimo.msg_queue.push(msg)
+  }
+
+  rimo.msg_loop = function() {
+    setTimeout(function() {
+      if (rimo.msg_queue.length > 0) {
+        var msg = JSON.stringify(rimo.msg_queue)
+        rimo.msg_queue.length = 0
+        rimo.send(msg)
+      }
+      rimo.msg_loop()
+    }, rimo.settings.MESSAGE_WAIT)
+  }
 
   rimo.send = function(msg, retry) {
     if ('ws' in rimo) {
@@ -211,16 +234,13 @@
 
   // send response
   rimo.send_response = function(node, reqid, data) {
-    setTimeout(function() {
-      var msg = JSON.stringify({
-        type: 'response',
-        id: node.getAttribute('rimo_id'),
-        reqid: reqid,
-        data: data
-      })
-      rimo.log.debug(msg)
-      rimo.send(msg)
-    }, 0)
+    var msg = {
+      type: 'response',
+      id: node.getAttribute('rimo_id'),
+      reqid: reqid,
+      data: data
+    }
+    rimo.push_msg(msg)
   }
 
   /* Event control */
@@ -231,37 +251,34 @@
     // since event bubbles up.
     var currentTarget = e.currentTarget
     if (!is_rimo_node(currentTarget)) { return }
-    setTimeout(function() {
-      var event = {
-        'type': e.type,
-        'currentTarget': {'id': currentTarget.getAttribute('rimo_id')},
-        'target': {'id': e.target.getAttribute('rimo_id')}
-      }
+    var event = {
+      'type': e.type,
+      'currentTarget': {'id': currentTarget.getAttribute('rimo_id')},
+      'target': {'id': e.target.getAttribute('rimo_id')}
+    }
 
-      if (e.type in event_data_map) {
-        event_data_map[e.type].forEach(function(prop) {
-          event.target[prop] = e.target[prop]
-          event.currentTarget[prop] = currentTarget[prop]
-        })
-      }
-      if (currentTarget.localName === 'select') {
-        var selected = []
-        var len = currentTarget.selectedOptions.length
-        for (var i=0; i < len; i++) {
-          var opt = currentTarget.selectedOptions[i]
-          selected.push(opt.getAttribute('rimo_id'))
-        }
-        event.currentTarget.selectedOptions = selected
-      }
-
-      var msg = JSON.stringify({
-        type: 'event',
-        event: event,
-        id: currentTarget.getAttribute('rimo_id')
+    if (e.type in event_data_map) {
+      event_data_map[e.type].forEach(function(prop) {
+        event.target[prop] = e.target[prop]
+        event.currentTarget[prop] = currentTarget[prop]
       })
-      rimo.log.debug(msg)
-      rimo.send(msg)
-    }, 0)
+    }
+    if (currentTarget.localName === 'select') {
+      var selected = []
+      var len = currentTarget.selectedOptions.length
+      for (var i=0; i < len; i++) {
+        var opt = currentTarget.selectedOptions[i]
+        selected.push(opt.getAttribute('rimo_id'))
+      }
+      event.currentTarget.selectedOptions = selected
+    }
+
+    var msg = {
+      type: 'event',
+      event: event,
+      id: currentTarget.getAttribute('rimo_id')
+    }
+    rimo.push_msg(msg)
   }
 
   rimo.addEventListener = function(node, event) {
@@ -401,19 +418,16 @@
   }
 
   rimo.log.log = function(level, message) {
-    setTimeout(function() {
-      var msg = JSON.stringify({
-        type: 'log',
-        level: level,
-        message: message
-      })
+    var msg = {
+      type: 'log',
+      level: level,
+      message: message
+    }
 
-      if (rimo.settings.LOG_CONSOLE) {
-        rimo.log.console(level, message)
-      }
-
-      rimo.send(msg)
-    }, 0)
+    if (rimo.settings.LOG_CONSOLE) {
+      rimo.log.console(level, message)
+    }
+    rimo.push_msg(msg)
   }
 
   rimo.log.console = function(level, message) {
