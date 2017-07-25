@@ -145,7 +145,32 @@
 
   function ws_onclose() {
     function reload() {
-      location.reload()
+      var _retry = 0
+      var xmlhttp = new XMLHttpRequest()
+
+      var open = function() {
+        console.log('Reloading...' + Array(_retry).join('.'))
+        xmlhttp.open('GET', 'http://' + location.host)
+        xmlhttp.send()
+      }
+
+      var check_reload = function() {
+        if (xmlhttp.readyState == 4) {
+          if (xmlhttp.status == 200) {
+            location.reload()
+          } else {
+            _retry += 1
+            if (_retry < 100) {
+              setTimeout(open, rimo.settings.RELOAD_WAIT)
+            } else {
+              rimo.log.console('error', 'Server auto-reload failed.')
+            }
+          }
+        }
+      }
+
+      xmlhttp.onreadystatechange = check_reload
+      open()
     }
 
     if (rimo.settings.AUTORELOAD) {
@@ -161,7 +186,7 @@
     var __ws_url = 'ws://' + location.host + '/rimo_ws'
     set_default('DEBUG', false)
     set_default('AUTORELOAD', false)
-    set_default('RELOAD_WAIT', 500)
+    set_default('RELOAD_WAIT', 100)
     set_default('MESSAGE_WAIT', 0.005)
     set_default('LOG_LEVEL', 'WARN')
     set_default('LOG_PREFIX', 'rimo: ')
