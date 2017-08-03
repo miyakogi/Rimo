@@ -61,8 +61,8 @@
     if (!is_rimo_node(node)) { return }
     rimo.send_event({type: 'mount', target: node, currentTarget: node})
     if (element_with_value.indexOf(node.tagName) >= 0) {
-      node.addEventListener('input', rimo.send_event)
-      node.addEventListener('change', rimo.send_event)
+      node.addEventListener('input', rimo.send_event, false)
+      node.addEventListener('change', rimo.send_event, false)
     }
   }
 
@@ -196,9 +196,9 @@
 
     // Make root WebScoket connection
     rimo.ws = new WebSocket(rimo.settings.WS_URL)
-    rimo.ws.addEventListener('open', ws_onopen)
-    rimo.ws.addEventListener('message', ws_onmessage)
-    rimo.ws.addEventListener('close', ws_onclose)
+    rimo.ws.addEventListener('open', ws_onopen, false)
+    rimo.ws.addEventListener('message', ws_onmessage, false)
+    rimo.ws.addEventListener('close', ws_onclose, false)
   }
 
   rimo.exec = function(node, method, params) {
@@ -269,19 +269,82 @@
   }
 
   /* Event control */
-  // emit events to python
-  // find better name...
+  // send events emitted on the browser to the server
+  var EventMap = {
+    'UIEvent': [],
+    'MouseEvent': ['altKey', 'button', 'clientX', 'clientY', 'ctrlKey',
+      'metaKey', 'movementX', 'movementY', 'offsetX', 'offsetY', 'pageX',
+      'pageY', 'region', 'screenX', 'screenY', 'shiftKey', 'x', 'y'],
+    'InputEvent': ['data'],
+    'KeyboardEvent': ['altKey', 'code', 'ctrlKey', 'key', 'locale', 'metaKey',
+      'repeat', 'shiftKey'],
+  }
   rimo.send_event = function(e) {
     // Catch currentTarget here. In callback, it becomes different node or null,
     // since event bubbles up.
     var currentTarget = e.currentTarget
     if (!is_rimo_node(currentTarget)) { return }
+
+    // define func here to capture e and event
+    function copy_event_attrs(event_class) {
+      EventMap[event_class].forEach(function(attr) {
+        event[attr] = e[attr]
+      })
+    }
+
+    /* Event Object Format
+      event = {
+        proto: event.__proto__.toString(),
+        type: event.type,
+        currentTarget: {
+          id: rimo_id of the currentTarget,
+          ...,  // some info of the currentTarget, like value/checked
+          },
+        target: {
+          id: rimo_id of the currentTarget,
+          ...,  // some info of the target
+          },
+        ..., // event specific fields
+      }
+    */
+    var proto = e.toString().replace(/\[object (.+)\]/, '\$1')
     var event = {
+      'proto': proto,
       'type': e.type,
       'currentTarget': {'id': currentTarget.getAttribute('rimo_id')},
       'target': {'id': e.target.getAttribute('rimo_id')}
     }
 
+    // Mouse Event
+    if (e instanceof MouseEvent) {
+      event.relatedTarget = e.relatedTarget
+      if (event.relatedTarget !== null) {
+        event.relatedTarget = {id: e.relatedTarget.getAttribute('rimo_id')}
+      } else {
+        event.relatedTarget = null
+      }
+      copy_event_attrs('MouseEvent') // Copy event attributes
+    }
+
+    // Drag Event
+    if (e instanceof DragEvent) {
+      if (e.type === 'dragstart') {
+        e.dataTransfer.setData('text/plain', currentTarget.getAttribute('rimo_id'))
+        e.dataTransfer.setData('text/html', currentTarget.outerHTML)
+      } else if (e.type === 'drop'){
+        e.preventDefault()  // Necessary to drop.
+        // TODO: Copy dataTransfer's data to event obj
+      }
+    }
+
+    if (proto in EventMap) {
+      for (var i in EventMap[proto]) {
+        var attr = EventMap[proto][i]
+        event[attr] = e[attr]
+      }
+    }
+
+    // On input/change events, copy data to the server node
     if (e.type in event_data_map) {
       event_data_map[e.type].forEach(function(prop) {
         event.target[prop] = e.target[prop]
@@ -298,6 +361,13 @@
       event.currentTarget.selectedOptions = selected
     }
 
+    /* Event message format
+        msg = {
+          type: 'event',
+          event: event object,
+          id: rimo_id of the currentTarget,
+        }
+    */
     var msg = {
       type: 'event',
       event: event,
@@ -307,7 +377,12 @@
   }
 
   rimo.addEventListener = function(node, event) {
-    node.addEventListener(event, rimo.send_event)
+    node.addEventListener(event, rimo.send_event, false)
+    if (event === 'drop') {
+      node.addEventListener('dragover', function(e) {
+        e.preventDefault()  // Necessary to drop.
+      })
+    }
   }
 
   rimo.removeEventListener = function(node, event) {
@@ -482,6 +557,6 @@
   }
 
   // Register object to global
-  window.addEventListener('load', initialize)
+  window.addEventListener('load', initialize, false)
   start_observer()
 })(typeof window != 'undefined' ? window : void 0);
