@@ -279,6 +279,7 @@
     'KeyboardEvent': ['altKey', 'code', 'ctrlKey', 'key', 'locale', 'metaKey',
       'repeat', 'shiftKey'],
   }
+  var _data_transfer_id = 1
   rimo.send_event = function(e) {
     // Catch currentTarget here. In callback, it becomes different node or null,
     // since event bubbles up.
@@ -299,11 +300,15 @@
         currentTarget: {
           id: rimo_id of the currentTarget,
           ...,  // some info of the currentTarget, like value/checked
-          },
+        },
         target: {
           id: rimo_id of the currentTarget,
           ...,  // some info of the target
-          },
+        },
+        dataTransfer: {
+          id: data transfer id for rimo,
+          ..., // data if exists
+        },
         ..., // event specific fields
       }
     */
@@ -328,15 +333,31 @@
 
     // Drag Event
     if (e instanceof DragEvent) {
+      if (e.type === 'drop') {
+        e.preventDefault()  // Necessary to enable drop.
+      }
+
+      // Add DataTransfer id
+      // dragstart: read/write enabled
+      // drop: read enabled
+      // others: disabled
+      event.dataTransfer = {}
+      var dt = e.dataTransfer
       if (e.type === 'dragstart') {
-        e.dataTransfer.setData('text/plain', currentTarget.getAttribute('rimo_id'))
-        e.dataTransfer.setData('text/html', currentTarget.outerHTML)
-      } else if (e.type === 'drop'){
-        e.preventDefault()  // Necessary to drop.
-        // TODO: Copy dataTransfer's data to event obj
+        var _id = _data_transfer_id.toString()
+        dt.setData('rimo/id', _id)
+        currentTarget.__dt_id = _id
+        currentTarget.__dragged = true
+        _data_transfer_id += 1
+      }
+      event.dataTransfer.id = dt.getData('rimo/id') || currentTarget.__dt_id || ''
+      if (e.type === 'dragend' && currentTarget.__dragged) {
+        delete currentTarget.__dragged
+        delete currentTarget.__dt_id
       }
     }
 
+    // Add event specific attributes
     if (proto in EventMap) {
       for (var i in EventMap[proto]) {
         var attr = EventMap[proto][i]
@@ -376,11 +397,15 @@
     rimo.push_msg(msg)
   }
 
+  // Add event listener
   rimo.addEventListener = function(node, event) {
     node.addEventListener(event, rimo.send_event, false)
-    if (event === 'drop') {
+    if (event === 'dragstart') {
+      // Send drag-end signal to remove data on dataTransfer on server
+      node.addEventListener('dragend', rimo.send_event, false)
+    } else if (event === 'drop') {
       node.addEventListener('dragover', function(e) {
-        e.preventDefault()  // Necessary to drop.
+        e.preventDefault()  // Necessary to enable drop.
       })
     }
   }
