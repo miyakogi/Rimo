@@ -49,12 +49,27 @@
   }
 
   function get_node(id) {
-    // return document.getElementById(id)
-    return document.querySelector(`[rimo_id="${id}"]`)
+    if (id === 'window') {
+      return window
+    } else if (id === 'document') {
+      return document
+    } else {
+      return document.querySelector(`[rimo_id="${id}"]`)
+    }
+  }
+
+  function get_rimo_id(node) {
+    if (node === window) {
+      return 'window'
+    } else if (node === document) {
+      return 'document'
+    } else {
+      return node.getAttribute('rimo_id')
+    }
   }
 
   function is_rimo_node(node) {
-    return node.hasAttribute('rimo_id')
+    return  node === document || node === window || node.hasAttribute('rimo_id')
   }
 
   function node_mounted(node) {
@@ -199,6 +214,9 @@
     rimo.ws.addEventListener('open', ws_onopen, false)
     rimo.ws.addEventListener('message', ws_onmessage, false)
     rimo.ws.addEventListener('close', ws_onclose, false)
+
+    node_mounted(document)
+    node_mounted(window)
   }
 
   rimo.exec = function(node, method, params) {
@@ -261,7 +279,7 @@
   rimo.send_response = function(node, reqid, data) {
     const msg = {
       type: 'response',
-      id: node.getAttribute('rimo_id'),
+      id: get_rimo_id(node),
       reqid: reqid,
       data: data
     }
@@ -284,6 +302,7 @@
     // Catch currentTarget here. In callback, it becomes different node or null,
     // since event bubbles up.
     const currentTarget = e.currentTarget
+    const target = e.target
     if (!is_rimo_node(currentTarget)) { return }
 
     // define func here to capture e and event
@@ -316,15 +335,14 @@
     const event = {
       'proto': proto,
       'type': e.type,
-      'currentTarget': {'id': currentTarget.getAttribute('rimo_id')},
-      'target': {'id': e.target.getAttribute('rimo_id')}
+      'currentTarget': {'id': get_rimo_id(currentTarget)},
+      'target': {'id': get_rimo_id(e.target)}
     }
 
     // Mouse Event
     if (e instanceof MouseEvent) {
-      event.relatedTarget = e.relatedTarget
-      if (event.relatedTarget !== null) {
-        event.relatedTarget = {id: e.relatedTarget.getAttribute('rimo_id')}
+      if (e.relatedTarget !== null) {
+        event.relatedTarget = {id: get_rimo_id(e.relatedTarget)}
       } else {
         event.relatedTarget = null
       }
@@ -377,7 +395,7 @@
       const len = currentTarget.selectedOptions.length
       for (let i=0; i < len; i++) {
         let opt = currentTarget.selectedOptions[i]
-        selected.push(opt.getAttribute('rimo_id'))
+        selected.push(get_rimo_id(opt))
       }
       event.currentTarget.selectedOptions = selected
     }
@@ -392,7 +410,7 @@
     const msg = {
       type: 'event',
       event: event,
-      id: currentTarget.getAttribute('rimo_id')
+      id: get_rimo_id(currentTarget)
     }
     rimo.push_msg(msg)
   }
