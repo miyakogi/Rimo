@@ -36,7 +36,7 @@
     }
 
     // Get unknown log level
-    console.warn(rimo.settings.LOG_PREFIX + `unknown log level: {level}`)
+    console.warn(rimo.settings.LOG_PREFIX + `unknown log level: ${level}`)
     return 0
   }
 
@@ -50,7 +50,7 @@
 
   function get_node(id) {
     // return document.getElementById(id)
-    return document.querySelector(`[rimo_id="{id}"]`)
+    return document.querySelector(`[rimo_id="${id}"]`)
   }
 
   function is_rimo_node(node) {
@@ -131,8 +131,8 @@
           let node = get_node(msg.id)
             if (!node) {
               // node not found. send warning.
-              rimo.log.console('warn', `gat message to unknown node (id={msg.id}).\n Message: {msg}`)
-              rimo.log.warn(`unknown node: id={msg.id}, tag={msg.tag} method={msg.method}`)
+              rimo.log.console('warn', `gat message to unknown node (id=${msg.id}).\n Message: ${msg}`)
+              rimo.log.warn(`unknown node: id=${msg.id}, method=${msg.method}`)
             } else {
               rimo.exec(node, msg.method, msg.params)
             }
