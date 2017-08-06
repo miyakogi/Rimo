@@ -3,10 +3,10 @@
 ;(function(window, undefined){
   'use strict';
   // Define global object
-  var rimo = { version: '0.0.1', settings: {}, log: { level: 0 }}
-  var config_prefix = 'RIMO_'
+  const rimo = { version: '0.0.1', settings: {}, log: { level: 0 }}
+  const config_prefix = 'RIMO_'
 
-  var log_levels = {
+  const log_levels = {
     FATAL: 50,
     CRITICAL: 50,
     ERROR: 40,
@@ -17,8 +17,8 @@
     NOTSET: 0,
   }
 
-  var element_with_value = ['INPUT', 'TEXTAREA', 'SELECT']
-  var event_data_map = {
+  const element_with_value = ['INPUT', 'TEXTAREA', 'SELECT']
+  const event_data_map = {
     'input': ['value'],
     'change': ['checked', 'value']
   }
@@ -29,14 +29,14 @@
     }
 
     if (typeof level === 'string') {
-      var s = level.toUpperCase()
+      const s = level.toUpperCase()
       if (s in log_levels) {
         return log_levels[s]
       }
     }
 
     // Get unknown log level
-    console.warn(rimo.settings.LOG_PREFIX + 'unknown log level: ', level)
+    console.warn(rimo.settings.LOG_PREFIX + `unknown log level: {level}`)
     return 0
   }
 
@@ -50,7 +50,7 @@
 
   function get_node(id) {
     // return document.getElementById(id)
-    return document.querySelector('[rimo_id="#id"]'.replace(/#id/, id))
+    return document.querySelector(`[rimo_id="{id}"]`)
   }
 
   function is_rimo_node(node) {
@@ -72,7 +72,7 @@
   }
 
   function mutation_handler(m) {
-    var i, node
+    let i, node
     for (i=0; i < m.addedNodes.length; i++) {
       node = m.addedNodes[i]
       if (node && node.nodeType === Node.ELEMENT_NODE && node.hasAttribute('rimo_id')) {
@@ -89,14 +89,14 @@
 
   function start_observer() {
     // initialize observer
-    var observer = new MutationObserver(
+    const observer = new MutationObserver(
       function(mutations) {
         setTimeout(function() {
           mutations.forEach(mutation_handler)
         }, 0);
       }
     )
-    var obs_conf = {
+    const obs_conf = {
       'subtree': true,
       'childList': true,
     }
@@ -114,25 +114,25 @@
   }
 
   function ws_onmessage(e) {
-    var data = e.data
+    const data = e.data
     setTimeout(function() {
-      var msgs = JSON.parse(data)
+      const msgs = JSON.parse(data)
       msgs.forEach(msg_to_node)
     }, 0)
   }
 
   function msg_to_node(msg) {
-    var target = msg.target
+    const target = msg.target
     if (target === 'node') {
-      var node = get_node(msg.id)
+      let node = get_node(msg.id)
       if (!node) {
         // node may not have been mounted yet. retry 100ms later.
         setTimeout(function() {
-          var node = get_node(msg.id)
+          let node = get_node(msg.id)
             if (!node) {
               // node not found. send warning.
-              rimo.log.console('warn', 'gat message to unknown node (id=' + msg.id + ').\n Message: ' + msg)
-              rimo.log.warn('unknown node: id=' + msg.id + ', tag=' + msg.tag + ', method=' + msg.method)
+              rimo.log.console('warn', `gat message to unknown node (id={msg.id}).\n Message: {msg}`)
+              rimo.log.warn(`unknown node: id={msg.id}, tag={msg.tag} method={msg.method}`)
             } else {
               rimo.exec(node, msg.method, msg.params)
             }
@@ -145,16 +145,16 @@
 
   function ws_onclose() {
     function reload() {
-      var _retry = 0
-      var xmlhttp = new XMLHttpRequest()
+      let _retry = 0
+      const xmlhttp = new XMLHttpRequest()
 
-      var open = function() {
+      const open = function() {
         console.log('Reloading...' + Array(_retry).join('.'))
         xmlhttp.open('GET', 'http://' + location.host)
         xmlhttp.send()
       }
 
-      var check_reload = function() {
+      const check_reload = function() {
         if (xmlhttp.readyState == 4) {
           if (xmlhttp.status == 200) {
             location.reload()
@@ -183,7 +183,7 @@
 
   function initialize() {
     // Define default variables
-    var __ws_url = 'ws://' + location.host + '/rimo_ws'
+    const __ws_url = 'ws://' + location.host + '/rimo_ws'
     set_default('DEBUG', false)
     set_default('AUTORELOAD', false)
     set_default('RELOAD_WAIT', 100)
@@ -204,7 +204,7 @@
   rimo.exec = function(node, method, params) {
     // Execute fucntion with msg
     setTimeout(function() {
-      var args = [node].concat(params)
+      const args = [node].concat(params)
       rimo[method].apply(rimo, args)
     }, 0)
   }
@@ -232,7 +232,7 @@
   rimo.msg_loop = function() {
     setTimeout(function() {
       if (rimo.msg_queue.length > 0) {
-        var msg = JSON.stringify(rimo.msg_queue)
+        const msg = JSON.stringify(rimo.msg_queue)
         rimo.msg_queue.length = 0
         rimo.send(msg)
       }
@@ -259,7 +259,7 @@
 
   // send response
   rimo.send_response = function(node, reqid, data) {
-    var msg = {
+    const msg = {
       type: 'response',
       id: node.getAttribute('rimo_id'),
       reqid: reqid,
@@ -270,7 +270,7 @@
 
   /* Event control */
   // send events emitted on the browser to the server
-  var EventMap = {
+  const EventMap = {
     'UIEvent': [],
     'MouseEvent': ['altKey', 'button', 'clientX', 'clientY', 'ctrlKey',
       'metaKey', 'movementX', 'movementY', 'offsetX', 'offsetY', 'pageX',
@@ -279,11 +279,11 @@
     'KeyboardEvent': ['altKey', 'code', 'ctrlKey', 'key', 'locale', 'metaKey',
       'repeat', 'shiftKey'],
   }
-  var _data_transfer_id = 1
+  let _data_transfer_id = 1
   rimo.send_event = function(e) {
     // Catch currentTarget here. In callback, it becomes different node or null,
     // since event bubbles up.
-    var currentTarget = e.currentTarget
+    const currentTarget = e.currentTarget
     if (!is_rimo_node(currentTarget)) { return }
 
     // define func here to capture e and event
@@ -312,8 +312,8 @@
         ..., // event specific fields
       }
     */
-    var proto = e.toString().replace(/\[object (.+)\]/, '\$1')
-    var event = {
+    const proto = e.toString().replace(/\[object (.+)\]/, '\$1')
+    const event = {
       'proto': proto,
       'type': e.type,
       'currentTarget': {'id': currentTarget.getAttribute('rimo_id')},
@@ -342,9 +342,9 @@
       // drop: read enabled
       // others: disabled
       event.dataTransfer = {}
-      var dt = e.dataTransfer
+      const dt = e.dataTransfer
       if (e.type === 'dragstart') {
-        var _id = _data_transfer_id.toString()
+        const _id = _data_transfer_id.toString()
         dt.setData('rimo/id', _id)
         currentTarget.__dt_id = _id
         currentTarget.__dragged = true
@@ -359,8 +359,8 @@
 
     // Add event specific attributes
     if (proto in EventMap) {
-      for (var i in EventMap[proto]) {
-        var attr = EventMap[proto][i]
+      for (let i in EventMap[proto]) {
+        const attr = EventMap[proto][i]
         event[attr] = e[attr]
       }
     }
@@ -373,10 +373,10 @@
       })
     }
     if (currentTarget.localName === 'select') {
-      var selected = []
-      var len = currentTarget.selectedOptions.length
-      for (var i=0; i < len; i++) {
-        var opt = currentTarget.selectedOptions[i]
+      const selected = []
+      const len = currentTarget.selectedOptions.length
+      for (let i=0; i < len; i++) {
+        let opt = currentTarget.selectedOptions[i]
         selected.push(opt.getAttribute('rimo_id'))
       }
       event.currentTarget.selectedOptions = selected
@@ -389,7 +389,7 @@
           id: rimo_id of the currentTarget,
         }
     */
-    var msg = {
+    const msg = {
       type: 'event',
       event: event,
       id: currentTarget.getAttribute('rimo_id')
@@ -416,14 +416,14 @@
 
   /* DOM control */
   rimo.insert = function(node, ind, html) {
-    var index = Number(ind)
+    const index = Number(ind)
     if (!node.hasChildNodes() || index >= node.childNodes.length) {
       node.insertAdjacentHTML('beforeend', html)
     } else {
-      var ref_node = node.childNodes[index]
+      const ref_node = node.childNodes[index]
       if (ref_node.nodeType !== 1) {
         // There may be better way...
-        var _ = document.createElement('template')
+        const _ = document.createElement('template')
         _.innerHTML = html
         // no need to clone contents, since this template is used once
         ref_node.parentNode.insertBefore(_.content, ref_node)
@@ -450,17 +450,17 @@
   }
 
   rimo.removeChildById = function(node, id) {
-    var child = get_node(id)
+    const child = get_node(id)
     if (child) { node.removeChild(child) }
   }
 
   rimo.removeChildByIndex = function(node, index) {
-    var child = node.childNodes.item(index)
+    const child = node.childNodes.item(index)
     if (child) { node.removeChild(child) }
   }
 
   rimo.replaceChildById = function(node, html, id) {
-    var old_child = get_node(id)
+    const old_child = get_node(id)
     if (old_child) {
       old_child.insertAdjacentHTML('beforebegin', html)
       old_child.parentNode.removeChild(old_child)
@@ -468,7 +468,7 @@
   }
 
   rimo.replaceChildByIndex = function(node, html, index) {
-    var old_child = node.childNodes.item(index)
+    const old_child = node.childNodes.item(index)
     if (old_child) {
       rimo.insert(node, index, html)
       old_child.parentNode.removeChild(old_child)
@@ -505,7 +505,7 @@
   }
 
   rimo.getBoundingClientRect = function(node, reqid) {
-    var rect = node.getBoundingClientRect()
+    const rect = node.getBoundingClientRect()
     rimo.send_response(node, reqid, {
       bottom: rect.bottom,
       height: rect.height,
@@ -543,7 +543,7 @@
   }
 
   rimo.log.log = function(level, message) {
-    var msg = {
+    const msg = {
       type: 'log',
       level: level,
       message: message
