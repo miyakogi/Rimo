@@ -106,14 +106,12 @@
     // initialize observer
     const observer = new MutationObserver(
       function(mutations) {
-        setTimeout(function() {
-          mutations.forEach(mutation_handler)
-        }, 0);
+        mutations.forEach(mutation_handler)
       }
     )
     const obs_conf = {
-      'subtree': true,
       'childList': true,
+      'subtree': true,
     }
     observer.observe(document, obs_conf)
   }
