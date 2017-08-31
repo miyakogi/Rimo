@@ -514,6 +514,9 @@
     // I won't support IE and Safari...
     // node.classList.remove(...params.classes)
     node.classList.remove.apply(node.classList, classes)
+    if (node.classList.length == 0 && node.hasAttribute('class')) {
+      node.removeAttribute('class')
+    }
   }
 
   rimo.empty = function(node) {
